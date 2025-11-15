@@ -1,0 +1,536 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tic Tac Toe</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --x: #22d3ee;       /* cyan */
+      --o: #f472b6;       /* pink */
+      --accent: #a78bfa;  /* purple */
+      --win: #34d399;     /* green */
+      --lose: #ef4444;    /* red */
+      --hover: rgba(255,255,255,0.06);
+      --tile: #1f2937;
+      --tile-border: #374151;
+      --shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: radial-gradient(1000px 500px at 20% 10%, #1b243b 0%, var(--bg) 40%) fixed;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      margin: 0;
+      padding: 0;
+    }
+
+    .app {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: linear-gradient(180deg, #0b1226 0%, var(--panel) 100%);
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f2937;
+      background: linear-gradient(180deg, rgba(167,139,250,0.08) 0%, rgba(167,139,250,0) 100%);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .logo {
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      border-radius: 12px;
+      background: radial-gradient(circle at 30% 30%, var(--accent), #1f1b3a 60%);
+      box-shadow: 0 6px 16px rgba(167,139,250,0.35);
+      color: white;
+      font-weight: 900;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .select, .button {
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: 150ms ease;
+    }
+
+    .select:hover, .button:hover {
+      border-color: #475569;
+      background: #111827;
+    }
+
+    .button.primary {
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 10px 14px;
+      box-shadow: 0 8px 18px rgba(37,99,235,0.35);
+    }
+
+    .button.primary:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    .status {
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .turn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #0b1226;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.x { background: var(--x); box-shadow: 0 0 8px var(--x); }
+    .dot.o { background: var(--o); box-shadow: 0 0 8px var(--o); }
+
+    .board-wrap {
+      padding: 4px 24px 24px 24px;
+    }
+
+    .board {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      perspective: 800px;
+    }
+
+    .cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 900;
+      letter-spacing: 1px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #0f172a, var(--tile));
+      border: 1px solid var(--tile-border);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      transition: 150ms ease background, 150ms ease transform, 150ms ease border-color, 150ms ease box-shadow;
+      box-shadow: inset 0 -6px 12px rgba(0,0,0,0.25);
+    }
+
+    .cell:hover { background: #172036; border-color: #475569; transform: translateY(-2px); }
+    .cell:active { transform: translateY(0); }
+
+    .cell.x { color: var(--x); text-shadow: 0 0 18px rgba(34,211,238,0.4); }
+    .cell.o { color: var(--o); text-shadow: 0 0 18px rgba(244,114,182,0.4); }
+
+    .cell.win {
+      background: linear-gradient(180deg, rgba(52,211,153,0.1), rgba(52,211,153,0.05));
+      border-color: var(--win);
+      box-shadow: 0 0 20px rgba(52,211,153,0.35);
+    }
+
+    .footer {
+      padding: 16px 24px 22px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid #1f2937;
+    }
+
+    .score {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .score .chip { font-size: 13px; padding: 8px 12px; }
+
+    .message {
+      text-align: right;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .message.win { color: var(--win); }
+    .message.draw { color: #fbbf24; }
+    .message.lose { color: var(--lose); }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .status { grid-template-columns: 1fr; }
+      .footer { grid-template-columns: 1fr; text-align: left; }
+      .message { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <div class="header">
+        <div class="title">
+          <div class="logo">XO</div>
+          <div>
+            <div style="font-size: 18px;">Tic Tac Toe</div>
+            <div style="font-size: 12px; color: var(--muted);">One file. All frontend. Pure JS + CSS.</div>
+          </div>
+        </div>
+        <div class="controls">
+          <select id="mode" class="select" aria-label="Game mode">
+            <option value="pvp">Player vs Player</option>
+            <option value="ai-easy">Player vs AI (Easy)</option>
+            <option value="ai-hard">Player vs AI (Hard)</option>
+          </select>
+          <select id="start" class="select" aria-label="Starting player">
+            <option value="X">X starts</option>
+            <option value="O">O starts</option>
+          </select>
+          <button id="reset" class="button primary">New game</button>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="turn">
+          <span>Turn:</span>
+          <span id="turnChip" class="chip">
+            <span class="dot x" id="turnDot"></span>
+            <span id="turnText">X</span>
+          </span>
+        </div>
+        <div class="chip" title="Winning lines animate">
+          <span class="dot" style="background: var(--accent); box-shadow: 0 0 8px var(--accent);"></span>
+          <span>Winning lines highlighted</span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board" role="grid" aria-label="Tic Tac Toe board"></div>
+        <div class="hint">Tip: Click a cell to place your mark. New game resets scores or hold Shift to soft-reset the board.</div>
+      </div>
+
+      <div class="footer">
+        <div class="score">
+          <div class="chip"><span class="dot x"></span><strong>X wins:</strong>&nbsp;<span id="scoreX">0</span></div>
+          <div class="chip"><span class="dot o"></span><strong>O wins:</strong>&nbsp;<span id="scoreO">0</span></div>
+          <div class="chip"><span class="dot" style="background:#fbbf24; box-shadow: 0 0 8px #fbbf24;"></span><strong>Draws:</strong>&nbsp;<span id="scoreD">0</span></div>
+        </div>
+        <div id="message" class="message">Ready.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const boardEl = document.getElementById('board');
+      const turnText = document.getElementById('turnText');
+      const turnDot = document.getElementById('turnDot');
+      const modeEl = document.getElementById('mode');
+      const startEl = document.getElementById('start');
+      const resetEl = document.getElementById('reset');
+      const msgEl = document.getElementById('message');
+      const scoreXEl = document.getElementById('scoreX');
+      const scoreOEl = document.getElementById('scoreO');
+      const scoreDEl = document.getElementById('scoreD');
+
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8], // rows
+        [0,3,6],[1,4,7],[2,5,8], // cols
+        [0,4,8],[2,4,6]          // diagonals
+      ];
+
+      let cells = Array(9).fill(null);
+      let turn = 'X';
+      let gameOver = false;
+      let scores = { X: 0, O: 0, D: 0 };
+
+      function renderBoard() {
+        boardEl.innerHTML = '';
+        for (let i = 0; i < 9; i++) {
+          const c = document.createElement('button');
+          c.className = 'cell';
+          c.setAttribute('role', 'gridcell');
+          c.setAttribute('aria-label', `Cell ${i+1}`);
+          c.dataset.idx = i;
+          c.addEventListener('click', onCellClick);
+          if (cells[i]) {
+            c.textContent = cells[i];
+            c.classList.add(cells[i].toLowerCase());
+            c.disabled = true;
+          }
+          boardEl.appendChild(c);
+        }
+      }
+
+      function setTurn(t) {
+        turn = t;
+        turnText.textContent = t;
+        turnDot.className = 'dot ' + t.toLowerCase();
+      }
+
+      function checkWin(board = cells) {
+        for (const w of wins) {
+          const [a,b,c] = w;
+          if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return { winner: board[a], line: w };
+          }
+        }
+        if (board.every(v => v)) return { winner: null, line: null, draw: true };
+        return null;
+      }
+
+      function highlightWin(line) {
+        [...boardEl.children].forEach((el, i) => {
+          if (line.includes(i)) el.classList.add('win');
+        });
+      }
+
+      function updateMessage(text, type = '') {
+        msgEl.textContent = text;
+        msgEl.className = 'message ' + (type || '');
+      }
+
+      function placeMark(idx, mark) {
+        if (cells[idx] || gameOver) return false;
+        cells[idx] = mark;
+        const cellEl = boardEl.children[idx];
+        cellEl.textContent = mark;
+        cellEl.classList.add(mark.toLowerCase());
+        cellEl.disabled = true;
+        return true;
+      }
+
+      // AI: Easy = random; Hard = Minimax with small heuristics.
+      function aiMove() {
+        const mode = modeEl.value;
+        if (!mode.startsWith('ai') || gameOver) return;
+
+        const mark = turn;
+        const opp = mark === 'X' ? 'O' : 'X';
+
+        let idx;
+        if (mode === 'ai-easy') {
+          const free = cells.map((v,i)=>v?null:i).filter(v=>v!==null);
+          idx = free[Math.floor(Math.random() * free.length)];
+        } else {
+          idx = bestMove(mark, opp);
+        }
+        // small delay for UX
+        setTimeout(() => {
+          if (idx !== undefined) {
+            placeMark(idx, mark);
+            const state = checkWin();
+            if (state && state.winner) {
+              gameOver = true;
+              highlightWin(state.line);
+              scores[mark]++; refreshScores();
+              updateMessage(`${mark} wins!`, 'win');
+            } else if (state && state.draw) {
+              gameOver = true;
+              scores.D++; refreshScores();
+              updateMessage(`It's a draw.`, 'draw');
+            } else {
+              setTurn(opp);
+              updateMessage(`Your turn: ${turn}`);
+            }
+          }
+        }, 280);
+      }
+
+      function bestMove(ai, human) {
+        const empties = cells.map((v,i)=>v?null:i).filter(i=>i!==null);
+
+        // 1) Win if possible
+        for (const i of empties) {
+          const test = cells.slice();
+          test[i] = ai;
+          const r = checkWin(test);
+          if (r && r.winner === ai) return i;
+        }
+
+        // 2) Block if needed
+        for (const i of empties) {
+          const test = cells.slice();
+          test[i] = human;
+          const r = checkWin(test);
+          if (r && r.winner === human) return i;
+        }
+
+        // 3) Minimax search (depth-limited for speed on the web)
+        const scoreMove = (board, player, opponent, depth = 0) => {
+          const res = checkWin(board);
+          if (res) {
+            if (res.winner === ai) return 10 - depth;
+            if (res.winner === human) return depth - 10;
+            if (res.draw) return 0;
+          }
+          let best = player === ai ? -Infinity : Infinity;
+          for (let i = 0; i < 9; i++) {
+            if (!board[i]) {
+              const next = board.slice();
+              next[i] = player;
+              const val = scoreMove(next, player === ai ? human : ai, player === ai ? ai : human, depth + 1);
+              if (player === ai) best = Math.max(best, val);
+              else best = Math.min(best, val);
+            }
+          }
+          return best;
+        };
+
+        let bestScore = -Infinity;
+        let move = empties[0];
+        for (const i of empties) {
+          const test = cells.slice();
+          test[i] = ai;
+          const s = scoreMove(test, human, ai, 0);
+          if (s > bestScore) { bestScore = s; move = i; }
+        }
+
+        // 4) Prefer center, then corners for tie-break
+        if (move === undefined) {
+          if (empties.includes(4)) return 4;
+          const corners = [0,2,6,8].filter(i => empties.includes(i));
+          if (corners.length) return corners[0];
+          return empties[0];
+        }
+        return move;
+      }
+
+      function onCellClick(e) {
+        if (gameOver) return;
+        const idx = Number(e.currentTarget.dataset.idx);
+        const placed = placeMark(idx, turn);
+        if (!placed) return;
+
+        const state = checkWin();
+        if (state && state.winner) {
+          gameOver = true;
+          highlightWin(state.line);
+          scores[turn]++; refreshScores();
+          updateMessage(`${turn} wins!`, 'win');
+        } else if (state && state.draw) {
+          gameOver = true;
+          scores.D++; refreshScores();
+          updateMessage(`It's a draw.`, 'draw');
+        } else {
+          setTurn(turn === 'X' ? 'O' : 'X');
+          updateMessage(`Turn: ${turn}`);
+          aiMove();
+        }
+      }
+
+      function refreshScores() {
+        scoreXEl.textContent = scores.X;
+        scoreOEl.textContent = scores.O;
+        scoreDEl.textContent = scores.D;
+      }
+
+      function softReset() {
+        cells = Array(9).fill(null);
+        gameOver = false;
+        renderBoard();
+        setTurn(startEl.value);
+        updateMessage('New round started.');
+        if (modeEl.value.startsWith('ai') && turn !== 'X' && startEl.value !== 'X') {
+          // If AI starts, make the first move
+          aiMove();
+        }
+      }
+
+      function hardReset() {
+        scores = { X: 0, O: 0, D: 0 };
+        refreshScores();
+        softReset();
+        updateMessage('New game. Scores reset.');
+      }
+
+      resetEl.addEventListener('click', (ev) => {
+        if (ev.shiftKey) softReset(); else hardReset();
+      });
+
+      modeEl.addEventListener('change', () => {
+        softReset();
+        updateMessage(`Mode: ${modeEl.value === 'pvp' ? 'Player vs Player' : modeEl.value === 'ai-easy' ? 'AI (Easy)' : 'AI (Hard)'}`);
+      });
+
+      startEl.addEventListener('change', () => {
+        softReset();
+        updateMessage(`${startEl.value} starts.`);
+      });
+
+      // Initial render
+      renderBoard();
+      setTurn('X');
+      updateMessage('Ready.');
+    })();
+  </script>
+</body>
+</html>
+```
